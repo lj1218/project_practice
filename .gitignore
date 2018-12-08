@@ -1,0 +1,7 @@
+.idea
+.DS_Store
+*.pyc
+__pycache__
+/data_process/applets/max_occur_ratio_combination/result*
+/data_process/applets/max_occur_ratio_combination/logs/*.log
+/data_process/applets/max_occur_ratio_combination/data/org_data.csv
