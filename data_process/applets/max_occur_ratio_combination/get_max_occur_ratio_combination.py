@@ -129,7 +129,7 @@ def save_result(rs, out_dir, print_n=10):
     """Save result."""
     @profiled(total=len(rs), print_n=print_n, name='save_rs_counter')
     def _save_result(r, directory):
-        filename = directory + 'result_{}.csv'.format(r[0])
+        filename = os.path.join(directory, 'result_{}.csv'.format(r[0]))
         df = r[1]
         del df['ratio']
         df.to_csv(filename, index=False)
@@ -143,10 +143,13 @@ def save_result(rs, out_dir, print_n=10):
 
 def main():
     """Entry."""
-    src_dir = 'data/'
-    out_dir = 'result/'
-    src_file = src_dir + 'data.xlsx'
-    org_data_file = src_dir + 'org_data.csv'
+    src_dir = 'data'
+    out_dir = 'result'
+    result_dir = os.path.join(out_dir, 'max_occur')
+    src_file = os.path.join(src_dir, 'data.xlsx')
+    org_data_file = os.path.join(src_dir, 'org_data.csv')
+    sorted_data_file = os.path.join(out_dir, 'data_sorted.csv')
+
     if not os.path.exists(org_data_file):
         gen_org_data(out_file=org_data_file,
                      xlsx_file=src_file, print_n=100000)
@@ -162,7 +165,7 @@ def main():
     print_msg('finish sorting values')
 
     print_msg('start saving sorted data to file...')
-    data_sorted.to_csv(out_dir + 'data_sorted.csv', index=False)
+    data_sorted.to_csv(sorted_data_file, index=False)
     print_msg('finish saving sorted data to file')
 
     print_msg('start grouping data...')
@@ -170,7 +173,7 @@ def main():
     print_msg('finish grouping data')
 
     result = find_max_occur(grouped, print_n=10000)
-    save_result(result, out_dir + 'max_occur/', print_n=10)
+    save_result(result, result_dir, print_n=10)
 
 
 if __name__ == '__main__':
