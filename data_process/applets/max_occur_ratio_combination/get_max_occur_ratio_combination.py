@@ -20,6 +20,8 @@ from functools import partial, wraps
 
 import pandas as pd
 
+from tool import Timer
+
 
 def get_time():
     """Get current system time."""
@@ -40,8 +42,11 @@ def gen_org_data(out_file, out_index='x,y,z',
     z_set = df['z'].dropna().sort_values()
     x_y_set = df['y,x'].dropna().sort_values()
 
+    print_msg('start generating original data...')
+    timer = Timer()
     with open(out_file, 'w', encoding='utf-8') as f:
         __gen_org_data(z_set, x_y_set, f, out_index, print_n)
+    print_msg('finish generating original data ({}s)'.format(timer.elapse(2)))
 
 
 def __gen_org_data(z_set, x_y_set, fh, out_index, print_n):
@@ -97,9 +102,14 @@ def do_calc(df, result_col='ratio', ndigits=2, print_n=100000):
 
     print_msg('start calculation...')
     print_msg('total rows = {}'.format(len(df)))
-    ratio = df.apply(calc, axis=1)
-    df[result_col] = ratio
-    print_msg('finish calculation')
+    timer = Timer()
+    ratios = df.apply(calc, axis=1)
+    print_msg('finish calculation ({}s)'.format(timer.elapse(2)))
+
+    print_msg('start appending result column...')
+    timer.reset()
+    df[result_col] = ratios
+    print_msg('finish appending result column ({}s)'.format(timer.elapse(2)))
     return df
 
 
@@ -119,9 +129,10 @@ def find_max_occur(groups, print_n=10000):
     result = []
     print_msg('start finding max occur...')
     print_msg('total groups = {}'.format(len(groups)))
+    timer = Timer()
     for group in groups:
         result, max_ = _find_max_occur(group, max_, result)
-    print_msg('finish finding max occur')
+    print_msg('finish finding max occur ({}s)'.format(timer.elapse(2)))
     return result
 
 
@@ -136,9 +147,10 @@ def save_result(rs, out_dir, print_n=10):
 
     print_msg('start saving result...')
     print_msg('total results = {}'.format(len(rs)))
+    timer = Timer()
     for x in rs:
         _save_result(x, out_dir)
-    print_msg('finish saving result')
+    print_msg('finish saving result ({}s)'.format(timer.elapse(2)))
 
 
 def main():
@@ -149,31 +161,43 @@ def main():
     src_file = os.path.join(src_dir, 'data.xlsx')
     org_data_file = os.path.join(src_dir, 'org_data.csv')
     sorted_data_file = os.path.join(out_dir, 'data_sorted.csv')
+    save_data_sorted = False
+
+    print_msg('start running...')
+    main_timer = Timer()
 
     if not os.path.exists(org_data_file):
         gen_org_data(out_file=org_data_file,
                      xlsx_file=src_file, print_n=100000)
 
     print_msg('start loading org data...')
+    timer = Timer()
     df = pd.read_csv(org_data_file)
-    print_msg('finish loading org data')
+    print_msg('finish loading org data ({}s)'.format(timer.elapse(2)))
 
     do_calc(df, ndigits=2, print_n=100000)
 
     print_msg('start sorting values...')
+    timer.reset()
     data_sorted = df.sort_values(by='ratio')
-    print_msg('finish sorting values')
+    print_msg('finish sorting values ({}s)'.format(timer.elapse(2)))
 
-    print_msg('start saving sorted data to file...')
-    data_sorted.to_csv(sorted_data_file, index=False)
-    print_msg('finish saving sorted data to file')
+    if save_data_sorted:
+        print_msg('start saving sorted data to file...')
+        timer.reset()
+        data_sorted.to_csv(sorted_data_file, index=False)
+        print_msg('finish saving sorted data to file ({}s)'.format(
+            timer.elapse(2)))
 
     print_msg('start grouping data...')
+    timer.reset()
     grouped = data_sorted.groupby('ratio')
-    print_msg('finish grouping data')
+    print_msg('finish grouping data ({}s)'.format(timer.elapse(2)))
 
     result = find_max_occur(grouped, print_n=10000)
     save_result(result, result_dir, print_n=10)
+
+    print_msg('finish running ({}s)'.format(main_timer.elapse(2)))
 
 
 if __name__ == '__main__':
